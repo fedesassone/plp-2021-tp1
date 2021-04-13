@@ -24,32 +24,45 @@ data Material a =
 
 -- Ejercicio 1 a
 -- Dada una función a->b crear una Fabrica a b
-crearFabricaSimple = undefined
+crearFabricaSimple :: (a -> b) -> Fabrica a b
+crearFabricaSimple f = (\xs -> map f xs)
 
 -- Ejercicio 1 b
 -- Usando la función crearFabricaSimple, definir las siguientes fábricas:
 
 -- neg que dada una lista de booleanos devuelve una lista con la negación de cada uno
 neg :: Fabrica Bool Bool
-neg = undefined
+neg = crearFabricaSimple not
 
 -- esPar que dada una lista de números enteros devuelve una lista que indica si cada uno es par
 esPar :: Fabrica Int Bool
-esPar = undefined
+esPar = crearFabricaSimple even
 
 -- sumarTuplas que dada una lista de tuplas numéricas devuelve una lista con la suma de sus componentes
 sumarTuplas :: Num a => Fabrica (a, a) a
-sumarTuplas = undefined
+sumarTuplas = crearFabricaSimple (\p -> (fst p) + (snd p))
 
 -- Ejercicio 2
 -- Definir el esquema de recursión estructural para el tipo Material
-foldMaterial = undefined
+foldMaterial :: (a -> b) -> (b -> Float -> b -> b) -> Material a -> b
+foldMaterial fMateriaPrima fMezclar m = case m of 
+    (MateriaPrima e) -> fMateriaPrima e
+    (Mezclar m1 p m2) -> fMezclar (rec m1) p (rec m2)
+        where rec = foldMaterial fMateriaPrima fMezclar
 
 -- Ejercicio 3
 -- Dada una función a->b crear una fábrica que procese materiales de tipo a y produzca
 -- materiales de tipo b aplicándole la función a cada caso base
 crearFabricaDeMaterial :: (a -> b) -> Fabrica (Material a) (Material b)
-crearFabricaDeMaterial = undefined
+crearFabricaDeMaterial f = crearFabricaSimple (foldMaterial f (\m1 p m2 -> Mezclar ))
+
+
+--crearFabricaDeMaterial f = (\ms -> map (foldMaterial (mp -> MateriaPrima (f mp)) (\m1 p m2 -> Mezclar m1 p m2)) ms)
+
+{-crearFabricaDeMaterial (+1) crearFabricaSimple
+[(Mezclar (MateriaPrima 5) 50 (MateriaPrima 7)), MateriaPrima 3] -> 
+[(Mezclar (MateriaPrima 6) 50 (MateriaPrima 8)), MateriaPrima 4]
+-}
 
 -- Ejercicio 4 a
 -- Dadas dos fábricas simples, conectar la salida de la primera con la entrada de la segunda
@@ -96,27 +109,32 @@ tests = do runTestTT allTests
 
 allTests = test [
   "ejercicio1" ~: testsEj1,
-  "ejercicio2" ~: testsEj2,
-  "ejercicio3" ~: testsEj3,
-  "ejercicio4" ~: testsEj4,
-  "ejercicio5" ~: testsEj5,
-  "ejercicio6" ~: testsEj6
+  "ejercicio2" ~: testsEj2
+  --"ejercicio3" ~: testsEj3,
+  --"ejercicio4" ~: testsEj4,
+  --"ejercicio5" ~: testsEj5,
+  --"ejercicio6" ~: testsEj6
   ]
 
 -- Ejemplos sólo para mostrar cómo se escriben los tests. Reemplazar por los tests propios.
 
 testsEj1 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
+  [] ~=? crearFabricaSimple (+1) [],
+  [1, 2] ~=? crearFabricaSimple (+1) [0, 1],
+  [2, 4] ~=? crearFabricaSimple (*2) [1, 2],
+  [False, True] ~=? neg [True, False],
+  [False, True] ~=? esPar [1, 2],
+  [3, 8] ~=? sumarTuplas [(1,2), (5,3)] 
   ]
 
+auxTestsEj2 = foldMaterial not (\m1 p m2 -> if p > 50 then m1 else m2)
 testsEj2 = test [
-  2 ~=? 1+1,
-  4 ~=? 2*2
+  False ~=? auxTestsEj2 (MateriaPrima True),
+  False ~=? auxTestsEj2 (Mezclar (MateriaPrima True) 51 (MateriaPrima False)) 
   ]
 
 testsEj3 = test [
-  2 ~=? 1+1,
+  4 ~=? 2*2,
   4 ~=? 2*2
   ]
 
