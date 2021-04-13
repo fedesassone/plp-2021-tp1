@@ -54,39 +54,39 @@ foldMaterial fMateriaPrima fMezclar m = case m of
 -- Dada una función a->b crear una fábrica que procese materiales de tipo a y produzca
 -- materiales de tipo b aplicándole la función a cada caso base
 crearFabricaDeMaterial :: (a -> b) -> Fabrica (Material a) (Material b)
-crearFabricaDeMaterial f = crearFabricaSimple (foldMaterial f (\m1 p m2 -> Mezclar ))
-
-
---crearFabricaDeMaterial f = (\ms -> map (foldMaterial (mp -> MateriaPrima (f mp)) (\m1 p m2 -> Mezclar m1 p m2)) ms)
-
-{-crearFabricaDeMaterial (+1) crearFabricaSimple
-[(Mezclar (MateriaPrima 5) 50 (MateriaPrima 7)), MateriaPrima 3] -> 
-[(Mezclar (MateriaPrima 6) 50 (MateriaPrima 8)), MateriaPrima 4]
--}
+crearFabricaDeMaterial f = crearFabricaSimple (foldMaterial (\mp -> MateriaPrima (f mp)) (\rec1 p rec2 -> Mezclar rec1 p rec2))
 
 -- Ejercicio 4 a
 -- Dadas dos fábricas simples, conectar la salida de la primera con la entrada de la segunda
-secuenciar = undefined
+secuenciar :: Fabrica a b -> Fabrica b c -> Fabrica a c 
+secuenciar f1 f2 = (\xs -> f2 $ f1 xs)
 
 -- Ejercicio 4 b
 -- Cuando dos fábricas simples producen cosas del mismo tipo, estas se pueden paralelizar
 -- De esta forma, dos fábricas simples se convierten en una sola que toma una lista de pares
 -- (cada par contiene una entrada de cada una de las fábricas originales) y devuelve
 -- una única lista que intercala los productos de ambas fábricas
-paralelizar = undefined
+paralelizar :: Fabrica a c -> Fabrica b c -> Fabrica (a, b) c 
+paralelizar f1 f2 = (\xs -> entrelazar $ zip (f1 (map fst xs)) (f2 (map snd xs)))
+
+entrelazar :: [(a, a)] -> [a]
+entrelazar = concatMap (\(x,y) -> [x,y])
 
 -- Ejercicio 5 a
 -- Dado un elemento y un material, determinar la pureza de dicho material
 -- respecto a dicho elemento
 pureza :: (Eq a) => a -> Material a -> Float
-pureza = undefined
+pureza e m = 100 * foldMaterial (\mp -> if mp == e then 1 else 0) (\rec1 p rec2 -> rec1 * (p/100) + rec2 * (1 - (p/100))) m
 
 -- Ejercicio 5 b
 -- Dada una lista de materiales y una lista de restricciones de pureza (representadas
 -- como tuplas elemento-valor), filtrar los materiales en la primera lista
 -- que cumplen con todas las restricciones de pureza en la segunda lista
 filtrarPorPureza :: (Eq a) => [Material a] -> [(a,Float)] -> [Material a]
-filtrarPorPureza = undefined
+filtrarPorPureza ms rs = filter ((flip cumpleRestricciones) rs) ms  
+
+cumpleRestricciones :: (Eq a) => Material a -> [(a, Float)] -> Bool
+cumpleRestricciones m rs = foldr (&&) True (map (\r -> (pureza (fst r) m) >= (snd r)) rs)
 
 -- Ejercicio 6 a
 -- Crear un emparejador
@@ -109,10 +109,10 @@ tests = do runTestTT allTests
 
 allTests = test [
   "ejercicio1" ~: testsEj1,
-  "ejercicio2" ~: testsEj2
-  --"ejercicio3" ~: testsEj3,
-  --"ejercicio4" ~: testsEj4,
-  --"ejercicio5" ~: testsEj5,
+  "ejercicio2" ~: testsEj2,
+  "ejercicio3" ~: testsEj3,
+  "ejercicio4" ~: testsEj4,
+  "ejercicio5" ~: testsEj5
   --"ejercicio6" ~: testsEj6
   ]
 
@@ -134,8 +134,8 @@ testsEj2 = test [
   ]
 
 testsEj3 = test [
-  4 ~=? 2*2,
-  4 ~=? 2*2
+  [MateriaPrima 4] ~=? crearFabricaDeMaterial (+1) [MateriaPrima 3],
+  [(Mezclar (MateriaPrima 6) 50 (MateriaPrima 8)), MateriaPrima 4] ~=? crearFabricaDeMaterial (+1) [(Mezclar (MateriaPrima 5) 50 (MateriaPrima 7)), MateriaPrima 3]
   ]
 
 testsEj4 = test [
@@ -148,6 +148,8 @@ mentira = MateriaPrima False
 
 testsEj5 = test [
   25.0 ~=? pureza True (Mezclar (Mezclar verdad 50.0 mentira) 50.0 mentira),
+  100.0 ~=? pureza True (Mezclar (Mezclar mentira 0.0 verdad) 100.0 verdad),
+  0.0 ~=? pureza True (Mezclar (Mezclar mentira 100.0 verdad) 100.0 verdad),
   [Mezclar verdad 80.0 mentira] ~=? filtrarPorPureza [Mezclar verdad 44.5 mentira, Mezclar verdad 80.0 mentira, Mezclar mentira 99.0 verdad] [(True, 50.0), (False , 1.0)]
   ]
 
