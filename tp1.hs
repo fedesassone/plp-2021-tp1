@@ -76,7 +76,7 @@ entrelazar = concatMap (\(x,y) -> [x,y])
 -- Dado un elemento y un material, determinar la pureza de dicho material
 -- respecto a dicho elemento
 pureza :: (Eq a) => a -> Material a -> Float
-pureza e m = 100 * foldMaterial (\mp -> if mp == e then 1 else 0) (\rec1 p rec2 -> rec1 * (p/100) + rec2 * (1 - (p/100))) m
+pureza e m = foldMaterial (\mp -> if mp == e then 100 else 0) (\rec1 p rec2 -> rec1 * (p/100) + rec2 * (1 - (p/100))) m
 
 -- Ejercicio 5 b
 -- Dada una lista de materiales y una lista de restricciones de pureza (representadas
@@ -92,7 +92,8 @@ cumpleRestricciones m rs = foldr (&&) True (map (\r -> (pureza (fst r) m) >= (sn
 -- Crear un emparejador
 -- Un emparejador es una fábrica que en lugar de producir algo,
 -- lo que hace es agrupar los materiales en pares
-emparejador = undefined
+emparejador :: Fabrica a (a,a)
+emparejador = uncurry zip . paresEImpares
 
 paresEImpares :: [a] -> ([a], [a])
 paresEImpares = foldr (\x rec -> (x:snd rec, fst rec)) ([], [])
@@ -101,7 +102,7 @@ paresEImpares = foldr (\x rec -> (x:snd rec, fst rec)) ([], [])
 -- Dada una función a->a->b crear una Fabrica a b
 -- Las fábricas complejas requieren dos unidades de material para producir cada unidad de producto
 crearFabricaCompleja :: (a -> a -> b) -> Fabrica a b
-crearFabricaCompleja = undefined
+crearFabricaCompleja f = map (uncurry f) . emparejador
 
 -- Tests
 tests :: IO Counts
@@ -112,8 +113,8 @@ allTests = test [
   "ejercicio2" ~: testsEj2,
   "ejercicio3" ~: testsEj3,
   "ejercicio4" ~: testsEj4,
-  "ejercicio5" ~: testsEj5
-  --"ejercicio6" ~: testsEj6
+  "ejercicio5" ~: testsEj5,
+  "ejercicio6" ~: testsEj6
   ]
 
 -- Ejemplos sólo para mostrar cómo se escriben los tests. Reemplazar por los tests propios.
