@@ -125,7 +125,9 @@ testsEj1 = test [
   [2, 4] ~=? crearFabricaSimple (*2) [1, 2],
   [False, True] ~=? neg [True, False],
   [False, True] ~=? esPar [1, 2],
-  [3, 8] ~=? sumarTuplas [(1,2), (5,3)] 
+  [3, 8] ~=? sumarTuplas [(1,2), (5,3)],
+  -- listas infinitas
+  take 10 (map (+1) [1..]) ~=? take 10 (crearFabricaSimple (+1) [1..])
   ]
 
 auxTestsEj2 = foldMaterial not (\m1 p m2 -> if p > 50 then m1 else m2)
@@ -136,22 +138,29 @@ testsEj2 = test [
 
 testsEj3 = test [
   [MateriaPrima 4] ~=? crearFabricaDeMaterial (+1) [MateriaPrima 3],
-  [(Mezclar (MateriaPrima 6) 50 (MateriaPrima 8)), MateriaPrima 4] ~=? crearFabricaDeMaterial (+1) [(Mezclar (MateriaPrima 5) 50 (MateriaPrima 7)), MateriaPrima 3]
+  [(Mezclar (MateriaPrima 6) 50 (MateriaPrima 8)), MateriaPrima 4] ~=? crearFabricaDeMaterial (+1) [(Mezclar (MateriaPrima 5) 50 (MateriaPrima 7)), MateriaPrima 3],
+  -- listas infinitas
+  take 10 [MateriaPrima x | x<- [2..]] ~=? take 10 (crearFabricaDeMaterial (+1) [MateriaPrima x | x<- [1..]])
   ]
 
 testsEj4 = test [
   [True, False, True, True] ~=? secuenciar esPar neg [1, 2, 3, 5],
-  [False, False, True, False, True, False] ~=? paralelizar neg esPar [(True, 1), (False, 3), (False, 1)]
+  [False, False, True, False, True, False] ~=? paralelizar neg esPar [(True, 1), (False, 3), (False, 1)],
+  -- listas infinitas
+  take 10 [ not (even x) | x <- [1..]] ~=? take 10 (secuenciar esPar neg [1..]),
+  take 10 (concat [[not (even x), even x] | x <- [1..]]) ~=? take 10 (paralelizar neg esPar [(even x, x) | x<- [1..]])
   ]
 
 verdad = MateriaPrima True
 mentira = MateriaPrima False
-
 testsEj5 = test [
   25.0 ~=? pureza True (Mezclar (Mezclar verdad 50.0 mentira) 50.0 mentira),
   100.0 ~=? pureza True (Mezclar (Mezclar mentira 0.0 verdad) 100.0 verdad),
   0.0 ~=? pureza True (Mezclar (Mezclar mentira 100.0 verdad) 100.0 verdad),
   [Mezclar verdad 80.0 mentira] ~=? filtrarPorPureza [Mezclar verdad 44.5 mentira, Mezclar verdad 80.0 mentira, Mezclar mentira 99.0 verdad] [(True, 50.0), (False , 1.0)]
+  -- listas infinitas
+  -- [1.0..100.0]
+  -- porcentajes = [Mezclar (MateriaPrima (even z)) x (MateriaPrima (not (even z))) | x<-[0.0..100.0], y <-[1..]]
   ]
 
 testsEj6 = test [
